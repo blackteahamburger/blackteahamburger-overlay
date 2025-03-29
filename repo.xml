@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd">
+<repositories xmlns="" version="1.0">
+	<repo quality="experimental" status="unofficial">
+	<name>my-overlay</name>
+	<description>My overlay</description>
+	<homepage>https://github.com/blackteahamburger/my-overlay/</homepage>
+	<owner type="person">
+		<name>blackteahamburger</name>
+		<email>blackteahamburger@outlook.com</email>
+	</owner>
+	<source type="git">https://github.com/blackteahamburger/my-overlay.git</source>
+	</repo>
+</repositories>
