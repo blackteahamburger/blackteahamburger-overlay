@@ -9,7 +9,7 @@ inherit python-any-r1 toolchain-funcs xdg-utils
 
 DESCRIPTION="Visual Studio Code - Open Source"
 HOMEPAGE="https://github.com/microsoft/vscode"
-IUSE="api-proposals badge-providers electron-27 electron-28 electron-29 electron-31 electron-32 electron-33 electron-34 openvsx reh reh-web substitute-urls temp-fix"
+IUSE="api-proposals badge-providers electron-27 electron-28 electron-29 electron-31 electron-32 electron-33 electron-34 electron-35 openvsx reh reh-web substitute-urls temp-fix"
 VS_RIPGREP_V="1.15.9"
 VS_ESBUILD_V="0.23.0"
 SRC_URI="!build-online? (
@@ -2051,6 +2051,7 @@ COMMON_DEPEND="
 	electron-32? ( dev-util/electron:32 )
 	electron-33? ( dev-util/electron:33 )
 	electron-34? ( dev-util/electron:34 )
+	electron-35? ( dev-util/electron:35 )
 	!electron-27? (
 	!electron-28? (
 	!electron-29? (
@@ -2058,8 +2059,9 @@ COMMON_DEPEND="
 	!electron-32? (
 	!electron-33? (
 	!electron-34? (
+	!electron-35? (
 		dev-util/electron:${ELECTRON_SLOT_DEFAULT}
-	) ) ) ) ) ) )
+	) ) ) ) ) ) ) )
 "
 
 #TODO: oniguruma?
@@ -2098,6 +2100,8 @@ src_unpack() {
 		export ELECTRON_SLOT=33
 	elif use electron-34; then
 		export ELECTRON_SLOT=34
+	elif use electron-35; then
+		export ELECTRON_SLOT=35
 	else
 		export ELECTRON_SLOT=$ELECTRON_SLOT_DEFAULT
 	fi
@@ -2244,7 +2248,7 @@ src_configure() {
 	# fi
 
 	#TODO: temp fix
-	if use electron-32 || use electron-33 || use electron-34; then
+	if use electron-32 || use electron-33 || use electron-34 || use electron-35; then
 		# CPPFLAGS="${CPPFLAGS} -std=c++20";
 		use build-online || eerror "build-online should be enabled for node-addon-api substitution to work" || die;
 		sed -i 's$"resolutions": {$"resolutions": {"node-addon-api": "^7.1.0",$' package.json || die;
