@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer type="person">
+		<email>PF4Public@users.noreply.github.com</email>
+	</maintainer>
+	<upstream>
+		<remote-id type="github">microsoft/vscode</remote-id>
+		<bugs-to>https://github.com/microsoft/vscode/issues</bugs-to>
+		<doc>https://github.com/microsoft/vscode/wiki</doc>
+	</upstream>
+	<use>
+		<flag name="api-proposals">Enable API proposals !WARNING! Enabling them might be forbidden by Microsoft licensing terms!</flag>
+		<flag name="badge-providers">Allow various badge providers</flag>
+		<flag name="build-online">Disable network-sandbox and open Pandora's box!</flag>
+		<flag name="electron-27">Build against electron-27 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-28">Build against electron-28 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-29">Build against electron-29 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-30">Build against electron-30 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-31">Build against electron-31 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-32">Build against electron-32 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-33">Build against electron-33 instead of the default one. Use at your own risk!</flag>
+		<flag name="electron-34">Build against electron-34 instead of the default one. Use at your own risk!</flag>
+		<flag name="openvsx">Use Eclipse Open VSX instead of Visual Studio Marketplace</flag>
+		<flag name="reh">Build Remote Extension Host</flag>
+		<flag name="reh-web">Build Remote Extension Host for Web</flag>
+		<flag name="substitute-urls">Even though telemetry is disabled by default in this ebuild, one might want to replace telemetry reporting urls with 0.0.0.0</flag>
+		<flag name="temp-fix">Enable this if vscode does not build for you by default, this could help</flag>
+	</use>
+</pkgmetadata>
