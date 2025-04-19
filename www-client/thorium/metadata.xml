@@ -29,7 +29,6 @@
 		<flag name="pgo">Enable PGO. Requires bundled binary profile data in sources tree. Often requires masked/testing llvm.</flag>
 		<flag name="proprietary-codecs">Enable proprietary codecs like H.264, MP3</flag>
 		<flag name="screencast">Enable support for remote desktop and screen cast using <pkg>media-video/pipewire</pkg></flag>
-		<flag name="system-av1">Use the system <pkg>media-libs/libaom</pkg> and <pkg>media-libs/dav1d</pkg> instead of the bundled ones</flag>
 		<flag name="system-crc32c">Use the system <pkg>dev-libs/crc32c</pkg> instead of the bundled one</flag>
 		<flag name="system-double-conversion">Use the system <pkg>dev-libs/double-conversion</pkg> instead of the bundled one</flag>
 		<flag name="system-ffmpeg">Use the system <pkg>media-video/ffmpeg</pkg> instead of the bundled one</flag>
@@ -38,7 +37,6 @@
 		<flag name="system-jsoncpp">Use the system <pkg>dev-libs/jsoncpp</pkg> instead of the bundled one</flag>
 		<flag name="system-libevent">Use the system <pkg>dev-libs/libevent</pkg> instead of the bundled one</flag>
 		<flag name="system-libusb">Use the system <pkg>dev-libs/libusb</pkg> instead of the bundled one</flag>
-		<flag name="system-libvpx">Use the system <pkg>media-libs/libvpx</pkg> instead of the bundled one</flag>
 		<flag name="system-openh264">Use the system <pkg>media-libs/openh264</pkg> instead of the bundled one. If disabled, it will restrict USE=bindist.</flag>
 		<flag name="system-openjpeg">Use the system-wide <pkg>media-libs/openjpeg</pkg> instead of the bundled one. OpenJPEG use are exclusively for Chromium's PDF viewer.</flag>
 		<flag name="system-png">Use system libpng instead of the bundled one</flag>

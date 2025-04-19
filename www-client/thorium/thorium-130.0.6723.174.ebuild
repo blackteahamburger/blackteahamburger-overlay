@@ -120,8 +120,8 @@ S="${WORKDIR}/chromium-${PV}"
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE_SYSTEM_LIBS="av1 crc32c double-conversion ffmpeg +harfbuzz +icu jsoncpp +libevent +libusb libvpx +openh264 openjpeg +png re2 snappy woff2 +zstd"
-IUSE="+X bluetooth cfi convert-dict cups cpu_flags_arm_neon custom-cflags debug enable-driver gtk4 hangouts headless hevc kerberos libcxx nvidia +official +optimize-webui pax-kernel +pgo +proprietary-codecs pulseaudio qt6 screencast selinux test ungoogled vaapi wayland widevine cpu_flags_ppc_vsx3"
+IUSE_SYSTEM_LIBS="crc32c double-conversion ffmpeg +harfbuzz +icu jsoncpp +libevent +libusb +openh264 openjpeg +png re2 snappy woff2 +zstd"
+IUSE="+X bluetooth cfi convert-dict cups cpu_flags_arm_neon custom-cflags debug enable-driver gtk4 hangouts headless hevc kerberos lto libcxx nvidia +official +optimize-webui pax-kernel +pgo +proprietary-codecs pulseaudio qt6 screencast selinux test ungoogled vaapi wayland widevine cpu_flags_ppc_vsx3"
 
 for i in ${IUSE_SYSTEM_LIBS}; do
 	[[ $i =~ ^(\+)?(.*)$ ]]
@@ -144,7 +144,6 @@ REQUIRED_USE="
 	screencast? ( wayland )
 	!headless? ( || ( X wayland ) )
 	!proprietary-codecs? ( !hevc )
-	vaapi? ( !system-av1 !system-libvpx )
 "
 
 COMMON_X_DEPEND="
@@ -169,7 +168,6 @@ COMMON_SNAPSHOT_DEPEND="
 	thorium-libjxl? ( media-libs/libjxl )
 	system-openjpeg? ( media-libs/openjpeg:2= )
 	system-re2? ( >=dev-libs/re2-0.2019.08.01:= )
-	system-libvpx? ( >=media-libs/libvpx-1.13.0:=[postproc] )
 	system-libusb? ( virtual/libusb:1 )
 	system-icu? ( >=dev-libs/icu-73.0:= )
 	>=dev-libs/libxml2-2.12.4:=[icu]
@@ -187,10 +185,6 @@ COMMON_SNAPSHOT_DEPEND="
 	>=media-libs/openh264-1.6.0:=
 	sys-libs/zlib:=
 	x11-libs/libdrm:=
-	system-av1? (
-		>=media-libs/dav1d-1.0.0:=
-		>=media-libs/libaom-3.7.0:=
-	)
 	sys-libs/zlib:=
 	x11-libs/libdrm:=
 	!headless? (
@@ -355,7 +349,9 @@ pre_build_checks() {
 	local EXTRA_DISK=1
 	local CHECKREQS_MEMORY="4G"
 	tc-is-cross-compiler && EXTRA_DISK=2
-	if tc-is-lto || use pgo; then
+	# Bug #952923
+	#if tc-is-lto || use pgo; then
+	if use lto || use pgo; then
 		CHECKREQS_MEMORY="9G"
 		tc-is-cross-compiler && EXTRA_DISK=4
 		use pgo && EXTRA_DISK=8
@@ -405,7 +401,9 @@ pkg_setup() {
 	# This is effectively the 'force-clang' path if GCC support is re-added.
 	# TODO: check if the user has already selected a specific impl via make.conf and respect that.
 	use_lto="false"
-	if tc-is-lto; then
+	# Bug #952923
+	#if tc-is-lto; then
+	if use lto; then
 		if ! use x86; then
 			use_lto="true"
 		fi
@@ -978,7 +976,7 @@ src_prepare() {
 	keeplibs+=(
 		third_party/libva_protected_content
 	)
-	use system-libvpx || keeplibs+=(
+	keeplibs+=(
 		third_party/libvpx
 		third_party/libvpx/source/libvpx/third_party/x86inc
 	)
@@ -1144,16 +1142,14 @@ src_prepare() {
 		keeplibs+=( third_party/zstd )
 	fi
 
-	if ! use system-av1; then
-		keeplibs+=(
-			third_party/dav1d
-			third_party/libaom
-			third_party/libaom/source/libaom/third_party/fastfeat
-			third_party/libaom/source/libaom/third_party/SVT-AV1
-			third_party/libaom/source/libaom/third_party/vector
-			third_party/libaom/source/libaom/third_party/x86inc
-		)
-	fi
+	keeplibs+=(
+		third_party/dav1d
+		third_party/libaom
+		third_party/libaom/source/libaom/third_party/fastfeat
+		third_party/libaom/source/libaom/third_party/SVT-AV1
+		third_party/libaom/source/libaom/third_party/vector
+		third_party/libaom/source/libaom/third_party/x86inc
+	)
 
 	if use libcxx; then
 		keeplibs+=( third_party/libc++ )
@@ -1340,14 +1336,8 @@ src_configure() {
 	if use system-zstd; then
 		gn_system_libraries+=( zstd )
 	fi
-	if use system-av1; then
-		gn_system_libraries+=( dav1d libaom )
-	fi
 	if use system-libusb; then
 		gn_system_libraries+=( libusb )
-	fi
-	if use system-libvpx; then
-		gn_system_libraries+=( libvpx )
 	fi
 	if use thorium-libjxl; then
 		gn_system_libraries+=( libjxl )
