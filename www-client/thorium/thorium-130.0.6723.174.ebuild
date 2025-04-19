@@ -536,7 +536,7 @@ src_prepare() {
 		"${FILESDIR}/chromium-132-mold.patch"
 		"${FILESDIR}/chromium-134-qt5-optional.patch"
 		"${FILESDIR}/chromium-131-compiler.patch"
-		"${FILESDIR}/chromium-130-fix-includes.patch"
+		"${FILESDIR}/chromium-130-fix-includes.patch" # https://github.com/Alex313031/thorium/issues/978
 	)
 
 	shopt -s globstar nullglob
@@ -1167,6 +1167,7 @@ src_prepare() {
 		keeplibs+=( third_party/re2 )
 	fi
 
+	# https://github.com/Alex313031/thorium/issues/978
 	keeplibs+=( third_party/unrar )
 
 	# Arch-specific
@@ -1436,6 +1437,7 @@ src_configure() {
 	myconf_gn+=" enable_hevc_parser_and_hw_decoder=$(usex hevc true false)"
 
 	# Ungoogled flags
+	# https://github.com/Alex313031/thorium/issues/978
 	#myconf_gn+=" build_with_tflite_lib=false"
 	myconf_gn+=" enable_mse_mpeg2ts_stream_parser=$(usex proprietary-codecs true false)"
 	myconf_gn+=" enable_reading_list=false"
@@ -1449,8 +1451,8 @@ src_configure() {
 	myconf_gn+=" google_api_key=\"\""
 	myconf_gn+=" google_default_client_id=\"\""
 	myconf_gn+=" google_default_client_secret=\"\""
+	# https://github.com/Alex313031/thorium/issues/978
 	#myconf_gn+=" safe_browsing_mode=0"
-	myconf_gn+=" safe_browsing_mode=1"
 	myconf_gn+=" use_official_google_api_keys=false"
 	myconf_gn+=" use_unofficial_version_number=false"
 
