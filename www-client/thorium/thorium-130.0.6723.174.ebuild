@@ -296,7 +296,7 @@ BDEPEND="
 	>=dev-build/gn-${GN_MIN_VER}
 	app-alternatives/ninja
 	dev-lang/perl
-	>=dev-util/gperf-3.0.3
+	>=dev-util/gperf-3.2
 	dev-vcs/git
 	>=net-libs/nodejs-7.6.0[inspector]
 	>=sys-devel/bison-2.4.3
@@ -534,7 +534,9 @@ src_prepare() {
 		"${FILESDIR}/chromium-132-mold.patch"
 		"${FILESDIR}/chromium-134-qt5-optional.patch"
 		"${FILESDIR}/chromium-131-compiler.patch"
+		"${FILESDIR}/chromium-130-fix-building-without-safebrowsing.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-130-fix-includes.patch" # https://github.com/Alex313031/thorium/issues/978
+		"${FILESDIR}/chromium-135-gperf.patch"
 	)
 
 	shopt -s globstar nullglob
@@ -686,6 +688,8 @@ src_prepare() {
 		local ugc_patch_series="${UGC_WD}/patches/series"
 		local ugc_substitution_list="${UGC_WD}/domain_substitution.list"
 
+		sed -i '11,40d' \
+			"${UGC_WD}/patches/upstream-fixes/missing-dependencies.patch" || die
 		sed -i '/^---.*minidump_uploader.cc/,+10d' \
 			"${UGC_WD}/patches/core/iridium-browser/all-add-trk-prefixes-to-possibly-evil-connections.patch" || die
 		sed -i '/aw_browser_context.cc/,+16d' \
@@ -1163,9 +1167,6 @@ src_prepare() {
 		keeplibs+=( third_party/re2 )
 	fi
 
-	# https://github.com/Alex313031/thorium/issues/978
-	keeplibs+=( third_party/unrar )
-
 	# Arch-specific
 	if use arm64 || use ppc64 ; then
 		keeplibs+=( third_party/swiftshader/third_party/llvm-10.0 )
@@ -1428,7 +1429,9 @@ src_configure() {
 
 	# Ungoogled flags
 	# https://github.com/Alex313031/thorium/issues/978
-	#myconf_gn+=" build_with_tflite_lib=false"
+	if use ungoogled; then
+	myconf_gn+=" build_with_tflite_lib=false"
+	fi
 	myconf_gn+=" enable_mse_mpeg2ts_stream_parser=$(usex proprietary-codecs true false)"
 	myconf_gn+=" enable_reading_list=false"
 	myconf_gn+=" enable_remoting=false"
@@ -1441,8 +1444,7 @@ src_configure() {
 	myconf_gn+=" google_api_key=\"\""
 	myconf_gn+=" google_default_client_id=\"\""
 	myconf_gn+=" google_default_client_secret=\"\""
-	# https://github.com/Alex313031/thorium/issues/978
-	#myconf_gn+=" safe_browsing_mode=0"
+	myconf_gn+=" safe_browsing_mode=0"
 	myconf_gn+=" use_official_google_api_keys=false"
 	myconf_gn+=" use_unofficial_version_number=false"
 

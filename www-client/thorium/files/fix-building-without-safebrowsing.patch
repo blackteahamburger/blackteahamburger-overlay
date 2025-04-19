@@ -3327,16 +3327,6 @@
    }
 -}
 +# }
---- a/components/safe_browsing/content/common/safe_browsing.mojom
-+++ b/components/safe_browsing/content/common/safe_browsing.mojom
-@@ -146,7 +146,6 @@ interface PhishingDetector {
-         mojo_base.mojom.ProtoWrapper? request);
- };
- 
--[EnableIf=full_safe_browsing]
- // Interface for setting a phishing model. This is scoped to an entire
- // RenderProcess.
- interface PhishingModelSetter {
 --- a/components/safe_browsing/core/browser/BUILD.gn
 +++ b/components/safe_browsing/core/browser/BUILD.gn
 @@ -23,8 +23,6 @@ source_set("browser") {
