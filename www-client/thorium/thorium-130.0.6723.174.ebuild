@@ -536,6 +536,7 @@ src_prepare() {
 		"${FILESDIR}/chromium-131-compiler.patch"
 		"${FILESDIR}/chromium-130-fix-building-without-safebrowsing.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-130-fix-includes.patch" # https://github.com/Alex313031/thorium/issues/978
+		"${FILESDIR}/chromium-130-fix-building-without-tflite-lib.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-135-gperf.patch"
 	)
 
@@ -696,6 +697,8 @@ src_prepare() {
 			"${UGC_WD}/patches/core/ungoogled-chromium/remove-unused-preferences-fields.patch" || die
 		sed -i 's/net::SecureDnsMode::kAutomatic/net::SecureDnsMode::kSecure/' \
 			"${UGC_WD}/patches/core/ungoogled-chromium/doh-changes.patch" || die
+		sed -i '683,714d' \
+			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
 		sed -i '4,5d' \
 			"${UGC_WD}/patches/extra/ungoogled-chromium/add-ungoogled-flag-headers.patch" || die
 		sed -i '4a \ // Include Thorium Flags\
@@ -1428,10 +1431,7 @@ src_configure() {
 	myconf_gn+=" enable_hevc_parser_and_hw_decoder=$(usex hevc true false)"
 
 	# Ungoogled flags
-	# https://github.com/Alex313031/thorium/issues/978
-	if use ungoogled; then
 	myconf_gn+=" build_with_tflite_lib=false"
-	fi
 	myconf_gn+=" enable_mse_mpeg2ts_stream_parser=$(usex proprietary-codecs true false)"
 	myconf_gn+=" enable_reading_list=false"
 	myconf_gn+=" enable_remoting=false"
