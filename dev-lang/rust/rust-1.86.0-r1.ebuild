@@ -6,31 +6,52 @@ EAPI=8
 LLVM_COMPAT=( 19 )
 PYTHON_COMPAT=( python3_{10..13} )
 
-RUST_MAX_VER=${PV}
-RUST_MIN_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).0"
+RUST_MAX_VER=${PV%%_*}
+if [[ ${PV} == *9999* ]]; then
+	RUST_MIN_VER="1.85.0" # Update this as new `beta` releases come out.
+elif [[ ${PV} == *beta* ]]; then
+	# Enforce that `beta` is built from `stable`.
+	# While uncommon it is possible for feature changes within `beta` to result
+	# in an older snapshot being unable to build a newer one without modifying the sources.
+	# 'stable' releases should always be able to build a beta snapshot so just use those.
+	RUST_MAX_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).1"
+	RUST_MIN_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).0"
+else
+	RUST_MIN_VER="$(ver_cut 1).$(($(ver_cut 2) - 1)).0"
+fi
 
 inherit check-reqs estack flag-o-matic llvm-r1 multiprocessing optfeature \
 	multilib multilib-build python-any-r1 rust rust-toolchain toolchain-funcs verify-sig
 
-if [[ ${PV} = *beta* ]]; then
+if [[ ${PV} = *9999* ]]; then
+	inherit git-r3
+	EGIT_REPO_URI="https://github.com/rust-lang/rust.git"
+	EGIT_SUBMODULES=(
+		"*"
+		"-src/gcc"
+	)
+elif [[ ${PV} == *beta* ]]; then
+	# Identify the snapshot date of the beta release:
+	# curl -Ls static.rust-lang.org/dist/channel-rust-beta.toml | grep beta-src.tar.xz
 	betaver=${PV//*beta}
 	BETA_SNAPSHOT="${betaver:0:4}-${betaver:4:2}-${betaver:6:2}"
 	MY_P="rustc-beta"
-	SRC="${BETA_SNAPSHOT}/rustc-beta-src.tar.xz -> rustc-${PV}-src.tar.xz"
+	SRC_URI="https://static.rust-lang.org/dist/${BETA_SNAPSHOT}/rustc-beta-src.tar.xz -> rustc-${PV}-src.tar.xz
+		verify-sig? ( https://static.rust-lang.org/dist/${BETA_SNAPSHOT}/rustc-beta-src.tar.xz.asc
+			-> rustc-${PV}-src.tar.xz.asc )
+	"
+	S="${WORKDIR}/${MY_P}-src"
 else
 	MY_P="rustc-${PV}"
-	SRC="${MY_P}-src.tar.xz"
+	SRC_URI="https://static.rust-lang.org/dist/${MY_P}-src.tar.xz
+		verify-sig? ( https://static.rust-lang.org/dist/${MY_P}-src.tar.xz.asc )
+	"
+	S="${WORKDIR}/${MY_P}-src"
 	KEYWORDS="~amd64 ~arm ~arm64 ~loong ~mips ~ppc ~ppc64 ~riscv ~sparc ~x86"
 fi
 
 DESCRIPTION="Systems programming language originally developed by Mozilla"
 HOMEPAGE="https://www.rust-lang.org/"
-
-SRC_URI="
-	https://static.rust-lang.org/dist/${SRC}
-	verify-sig? ( https://static.rust-lang.org/dist/${SRC}.asc )
-"
-S="${WORKDIR}/${MY_P}-src"
 
 # keep in sync with llvm ebuild of the same version as bundled one.
 ALL_LLVM_TARGETS=( AArch64 AMDGPU ARC ARM AVR BPF CSKY DirectX Hexagon Lanai
@@ -47,9 +68,9 @@ for _x in "${_ALL_RUST_EXPERIMENTAL_TARGETS[@]}"; do
 done
 
 LICENSE="|| ( MIT Apache-2.0 ) BSD BSD-1 BSD-2 BSD-4"
-SLOT="${PV}"
+SLOT="${PV%%_*}" # Beta releases get to share the same SLOT as the eventual stable
 
-IUSE="big-endian clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind lto miri nightly rustfmt rust-analyzer rust-src system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
+IUSE="big-endian clippy cpu_flags_x86_sse2 debug dist doc llvm-libunwind lto miri nightly rustfmt rust-analyzer rust-src +system-llvm test wasm ${ALL_LLVM_TARGETS[*]}"
 
 LLVM_DEPEND=()
 # splitting usedeps needed to avoid CI/pkgcheck's UncheckableDep limitation
@@ -68,12 +89,12 @@ BDEPEND="${PYTHON_DEPS}
 		>=sys-devel/gcc-4.7[cxx]
 		>=llvm-core/clang-3.5
 	)
-	lto? (
+	lto? ( system-llvm? (
 		|| (
 			$(llvm_gen_dep 'llvm-core/lld:${LLVM_SLOT}')
 			sys-devel/mold
 		)
-	)
+	) )
 	!system-llvm? (
 		>=dev-build/cmake-3.13.4
 		app-alternatives/ninja
@@ -118,27 +139,27 @@ REQUIRED_USE="|| ( ${ALL_LLVM_TARGETS[*]} )
 CMAKE_WARN_UNUSED_CLI=no
 
 QA_FLAGS_IGNORED="
-	usr/lib/${PN}/${PV}/bin/.*
-	usr/lib/${PN}/${PV}/libexec/.*
-	usr/lib/${PN}/${PV}/lib/lib.*.so
-	usr/lib/${PN}/${PV}/lib/rustlib/.*/bin/.*
-	usr/lib/${PN}/${PV}/lib/rustlib/.*/lib/lib.*.so
+	usr/lib/${PN}/${SLOT}/bin/.*
+	usr/lib/${PN}/${SLOT}/libexec/.*
+	usr/lib/${PN}/${SLOT}/lib/lib.*.so
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/bin/.*
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/lib/lib.*.so
 "
 
 QA_SONAME="
-	usr/lib/${PN}/${PV}/lib/lib.*.so.*
-	usr/lib/${PN}/${PV}/lib/rustlib/.*/lib/lib.*.so
+	usr/lib/${PN}/${SLOT}/lib/lib.*.so.*
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/lib/lib.*.so
 "
 
 QA_PRESTRIPPED="
-	usr/lib/${PN}/${PV}/lib/rustlib/.*/bin/rust-llvm-dwp
-	usr/lib/${PN}/${PV}/lib/rustlib/.*/lib/self-contained/crtn.o
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/bin/rust-llvm-dwp
+	usr/lib/${PN}/${SLOT}/lib/rustlib/.*/lib/self-contained/crtn.o
 "
 
 # An rmeta file is custom binary format that contains the metadata for the crate.
 # rmeta files do not support linking, since they do not contain compiled object files.
 # so we can safely silence the warning for this QA check.
-QA_EXECSTACK="usr/lib/${PN}/${PV}/lib/rustlib/*/lib*.rlib:lib.rmeta"
+QA_EXECSTACK="usr/lib/${PN}/${SLOT}/lib/rustlib/*/lib*.rlib:lib.rmeta"
 
 # causes double bootstrap
 RESTRICT="test"
@@ -157,6 +178,48 @@ clear_vendor_checksums() {
 
 toml_usex() {
 	usex "${1}" true false
+}
+
+src_unpack() {
+	if [[ ${PV} = *9999* ]]; then
+		git-r3_src_unpack
+		mkdir "${S}/.cargo" || die # The vendor script has a check for .cargo/config{,.toml}
+		touch "${S}/.cargo/config.toml" || die
+		local rust_stage0_root="$(${RUSTC} --print sysroot || die "Can't determine rust's sysroot")"
+		local rust_build=""
+		local rust_host=""
+		# Configure vendor to use the portage-provided toolchain. This prevents it from
+		# attempting to fetch a `beta` toolchain from the internet.
+		cat <<- _EOF_ > "${T}/vendor-config.toml"
+			[build]
+			build = "$(rust_abi "${CBUILD}")"
+			host = ["$(rust_abi "${CHOST}")"]
+			target = ["$(rust_abi "${CHOST}")"]
+			cargo = "${rust_stage0_root}/bin/cargo"
+			rustc = "${rust_stage0_root}/bin/rustc"
+			rustfmt = "${rust_stage0_root}/bin/rustfmt"
+		_EOF_
+		# We're using git sources so we need to run the Vendor script
+		# to ensure that all dependencies are present and up-to-date
+		mkdir "${S}/vendor" || die
+		# This also compiles the 'build helper', there's no way to avoid this.
+		${EPYTHON} "${S}"/x.py vendor -vvv --config="${T}"/vendor-config.toml -j$(makeopts_jobs) ||
+			die "Failed to vendor dependencies"
+		# TODO: This has to be generated somehow, this is from a 1.84.x tarball I had lying around.
+		cat <<- _EOF_ > "${S}/.cargo/config.toml"
+			[source.crates-io]
+			replace-with = "vendored-sources"
+
+			[source."git+https://github.com/rust-lang/team"]
+			git = "https://github.com/rust-lang/team"
+			replace-with = "vendored-sources"
+
+			[source.vendored-sources]
+			directory = "vendor"
+		_EOF_
+	else
+		verify-sig_src_unpack
+	fi
 }
 
 pre_build_checks() {
@@ -230,6 +293,11 @@ pkg_setup() {
 }
 
 src_prepare() {
+	if [[ ${PV} = *9999* ]]; then
+		# We need to update / generate lockfiles for the workspace
+		${CARGO} generate-lockfile --offline
+
+	fi
 	# Rust baselines to Pentium4 on x86, this patch lowers the baseline to i586 when sse2 is not set.
 	if use x86; then
 		if ! use cpu_flags_x86_sse2; then
@@ -296,6 +364,8 @@ src_configure() {
 	RUST_EXPERIMENTAL_TARGETS=${RUST_EXPERIMENTAL_TARGETS[@]}
 
 	local cm_btype="$(usex debug DEBUG RELEASE)"
+	local build_channel="$(usex nightly nightly stable)"
+	local build_miri="false"
 	cat <<- _EOF_ > "${S}"/config.toml
 		# https://github.com/rust-lang/rust/issues/135358 (bug #947897)
 		profile = "dist"
@@ -361,7 +431,7 @@ src_configure() {
 		profiler = true
 		cargo-native-static = false
 		[install]
-		prefix = "${EPREFIX}/usr/lib/${PN}/${PV}"
+		prefix = "${EPREFIX}/usr/lib/${PN}/${SLOT}"
 		sysconfdir = "etc"
 		docdir = "share/doc/rust"
 		bindir = "bin"
@@ -384,7 +454,7 @@ src_configure() {
 		$(if ! tc-is-cross-compiler; then
 			echo "default-linker = \"${CHOST}-cc\""
 		fi)
-		channel = "$(usex nightly nightly stable)"
+		channel = "${build_channel}"
 		description = "gentoo"
 		rpath = true
 		verbose-tests = true
@@ -606,11 +676,11 @@ src_test() {
 src_install() {
 	DESTDIR="${D}" "${EPYTHON}" ./x.py install -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
 
-	docompress /usr/lib/${PN}/${PV}/share/man/
+	docompress /usr/lib/${PN}/${SLOT}/share/man/
 
 	# bug #689562, #689160
-	rm -v "${ED}/usr/lib/${PN}/${PV}/etc/bash_completion.d/cargo" || die
-	rmdir -v "${ED}/usr/lib/${PN}/${PV}"/etc{/bash_completion.d,} || die
+	rm -v "${ED}/usr/lib/${PN}/${SLOT}/etc/bash_completion.d/cargo" || die
+	rmdir -v "${ED}/usr/lib/${PN}/${SLOT}"/etc{/bash_completion.d,} || die
 
 	local symlinks=(
 		cargo
@@ -632,34 +702,34 @@ src_install() {
 		# we need realpath on /usr/bin/* symlink return version-appended binary path.
 		# so /usr/bin/rustc should point to /usr/lib/rust/<ver>/bin/rustc-<ver>
 		# need to fix eselect-rust to remove this hack.
-		local ver_i="${i}-${PV}"
-		if [[ -f "${ED}/usr/lib/${PN}/${PV}/bin/${i}" ]]; then
+		local ver_i="${i}-${PV%%_*}"
+		if [[ -f "${ED}/usr/lib/${PN}/${SLOT}/bin/${i}" ]]; then
 			einfo "Installing ${i} symlink"
-			ln -v "${ED}/usr/lib/${PN}/${PV}/bin/${i}" "${ED}/usr/lib/${PN}/${PV}/bin/${ver_i}" || die
+			ln -v "${ED}/usr/lib/${PN}/${SLOT}/bin/${i}" "${ED}/usr/lib/${PN}/${SLOT}/bin/${ver_i}" || die
 		else
 			ewarn "${i} symlink requested, but source file not found"
 			ewarn "please report this"
 		fi
-		dosym "../lib/${PN}/${PV}/bin/${ver_i}" "/usr/bin/${ver_i}"
+		dosym "../lib/${PN}/${SLOT}/bin/${ver_i}" "/usr/bin/${ver_i}"
 	done
 
 	# symlinks to switch components to active rust in eselect
-	dosym "${PV}/lib" "/usr/lib/${PN}/lib-${PV}"
-	use rust-analyzer && dosym "${PV}/libexec" "/usr/lib/${PN}/libexec-${PV}"
-	dosym "${PV}/share/man" "/usr/lib/${PN}/man-${PV}"
-	dosym "rust/${PV}/lib/rustlib" "/usr/lib/rustlib-${PV}"
-	dosym "../../lib/${PN}/${PV}/share/doc/rust" "/usr/share/doc/${P}"
+	dosym "${SLOT}/lib" "/usr/lib/${PN}/lib-${SLOT}"
+	use rust-analyzer && dosym "${SLOT}/libexec" "/usr/lib/${PN}/libexec-${SLOT}"
+	dosym "${SLOT}/share/man" "/usr/lib/${PN}/man-${SLOT}"
+	dosym "rust/${SLOT}/lib/rustlib" "/usr/lib/rustlib-${SLOT}"
+	dosym "../../lib/${PN}/${SLOT}/share/doc/rust" "/usr/share/doc/${P}"
 
 	newenvd - "50${P}" <<-_EOF_
-		MANPATH="${EPREFIX}/usr/lib/rust/man-${PV}"
+		MANPATH="${EPREFIX}/usr/lib/rust/man-${SLOT}"
 	_EOF_
 
-	rm -rf "${ED}/usr/lib/${PN}/${PV}"/*.old || die
-	rm -rf "${ED}/usr/lib/${PN}/${PV}/bin"/*.old || die
-	rm -rf "${ED}/usr/lib/${PN}/${PV}/doc"/*.old || die
+	rm -rf "${ED}/usr/lib/${PN}/${SLOT}"/*.old || die
+	rm -rf "${ED}/usr/lib/${PN}/${SLOT}/bin"/*.old || die
+	rm -rf "${ED}/usr/lib/${PN}/${SLOT}/doc"/*.old || die
 
 	# note: eselect-rust adds EROOT to all paths below
-	cat <<-_EOF_ > "${T}/provider-${P}"
+	cat <<-_EOF_ > "${T}/provider-${PN}-${SLOT}"
 		/usr/bin/cargo
 		/usr/bin/rustdoc
 		/usr/bin/rust-gdb
@@ -689,11 +759,11 @@ src_install() {
 	fi
 
 	insinto /etc/env.d/rust
-	doins "${T}/provider-${P}"
+	doins "${T}/provider-${PN}-${SLOT}"
 
 	if use dist; then
 		"${EPYTHON}" ./x.py dist -vv --config="${S}"/config.toml -j$(makeopts_jobs) || die
-		insinto "/usr/lib/${PN}/${PV}/dist"
+		insinto "/usr/lib/${PN}/${SLOT}/dist"
 		doins -r "${S}/build/dist/."
 	fi
 }
