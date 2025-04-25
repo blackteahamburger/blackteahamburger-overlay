@@ -534,7 +534,6 @@ src_prepare() {
 		"${FILESDIR}/chromium-132-mold.patch"
 		"${FILESDIR}/chromium-134-qt5-optional.patch"
 		"${FILESDIR}/chromium-131-compiler.patch"
-		"${FILESDIR}/chromium-130-fix-building-without-safebrowsing.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-130-fix-includes.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-130-fix-building-without-tflite-lib.patch" # https://github.com/Alex313031/thorium/issues/978
 		"${FILESDIR}/chromium-135-gperf.patch"
@@ -1444,7 +1443,8 @@ src_configure() {
 	myconf_gn+=" google_api_key=\"\""
 	myconf_gn+=" google_default_client_id=\"\""
 	myconf_gn+=" google_default_client_secret=\"\""
-	myconf_gn+=" safe_browsing_mode=0"
+	# https://github.com/Alex313031/thorium/issues/978
+	#myconf_gn+=" safe_browsing_mode=0"
 	myconf_gn+=" use_official_google_api_keys=false"
 	myconf_gn+=" use_unofficial_version_number=false"
 
