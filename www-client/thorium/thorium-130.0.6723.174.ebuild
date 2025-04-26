@@ -120,7 +120,7 @@ S="${WORKDIR}/chromium-${PV}"
 LICENSE="BSD"
 SLOT="0"
 KEYWORDS="~amd64"
-IUSE_SYSTEM_LIBS="crc32c double-conversion ffmpeg +harfbuzz +icu jsoncpp +libevent +libusb +openh264 openjpeg +png re2 snappy woff2 +zstd"
+IUSE_SYSTEM_LIBS="brotli crc32c double-conversion ffmpeg +harfbuzz +icu jsoncpp +libevent +libusb +openh264 openjpeg +png re2 snappy woff2 +zstd"
 IUSE="+X bluetooth cfi convert-dict cups cpu_flags_arm_neon custom-cflags debug enable-driver gtk4 hangouts headless hevc kerberos lto libcxx nvidia +official +optimize-webui pax-kernel +pgo +proprietary-codecs pulseaudio qt6 screencast selinux test ungoogled vaapi wayland widevine cpu_flags_ppc_vsx3"
 
 for i in ${IUSE_SYSTEM_LIBS}; do
@@ -159,6 +159,7 @@ COMMON_X_DEPEND="
 "
 
 COMMON_SNAPSHOT_DEPEND="
+	system-brotli? ( >app-arch/brotli-1.1.0 )
 	system-crc32c? ( dev-libs/crc32c )
 	system-double-conversion? ( dev-libs/double-conversion )
 	system-woff2? ( media-libs/woff2 )
@@ -863,6 +864,8 @@ src_prepare() {
 		third_party/boringssl/src/third_party/fiat
 		third_party/breakpad
 		third_party/breakpad/breakpad/src/third_party/curl
+	)
+	use system-brotli || keeplibs+=(
 		third_party/brotli
 	)
 	keeplibs+=(
@@ -1311,6 +1314,9 @@ src_configure() {
 		libxslt
 		zlib
 	)
+	if use system-brotli; then
+		gn_system_libraries+=( brotli )
+	fi
 	if use system-crc32c; then
 		gn_system_libraries+=( crc32c )
 	fi
@@ -1444,7 +1450,10 @@ src_configure() {
 	myconf_gn+=" google_default_client_id=\"\""
 	myconf_gn+=" google_default_client_secret=\"\""
 	# https://github.com/Alex313031/thorium/issues/978
-	#myconf_gn+=" safe_browsing_mode=0"
+	# too many things to fix
+	if use ungoogled; then
+	myconf_gn+=" safe_browsing_mode=0"
+	fi
 	myconf_gn+=" use_official_google_api_keys=false"
 	myconf_gn+=" use_unofficial_version_number=false"
 
