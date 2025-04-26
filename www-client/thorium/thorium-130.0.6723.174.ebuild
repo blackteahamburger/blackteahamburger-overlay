@@ -1081,6 +1081,7 @@ src_prepare() {
 		third_party/tflite/src/third_party/xla/xla/tsl/util
 		third_party/tflite/src/third_party/xla/xla/tsl/framework
 		third_party/ukey2
+		third_party/unrar
 		third_party/utf
 		third_party/vulkan
 		third_party/wayland
@@ -1171,9 +1172,6 @@ src_prepare() {
 	if ! use system-re2; then
 		keeplibs+=( third_party/re2 )
 	fi
-
-	# https://github.com/Alex313031/thorium/issues/978
-	keeplibs+=( third_party/unrar )
 
 	# Arch-specific
 	if use arm64 || use ppc64 ; then
@@ -1453,7 +1451,6 @@ src_configure() {
 	myconf_gn+=" google_default_client_id=\"\""
 	myconf_gn+=" google_default_client_secret=\"\""
 	# https://github.com/Alex313031/thorium/issues/978
-	# too many things to fix
 	if use ungoogled; then
 	myconf_gn+=" safe_browsing_mode=0"
 	fi
