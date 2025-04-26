@@ -1172,6 +1172,9 @@ src_prepare() {
 		keeplibs+=( third_party/re2 )
 	fi
 
+	# https://github.com/Alex313031/thorium/issues/978
+	keeplibs+=( third_party/unrar )
+
 	# Arch-specific
 	if use arm64 || use ppc64 ; then
 		keeplibs+=( third_party/swiftshader/third_party/llvm-10.0 )
