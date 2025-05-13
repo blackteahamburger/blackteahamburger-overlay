@@ -56,4 +56,4 @@ fi
 # Set the .desktop file name
 export CHROME_DESKTOP="thorium-browser-thorium.desktop"
 
-exec -a "thorium-browser" "$PROGDIR/chrome" --extra-plugin-dir=/usr/lib/nsbrowser/plugins ${CHROMIUM_FLAGS} "$@"
+exec -a "thorium-browser" "$PROGDIR/thorium" --extra-plugin-dir=/usr/lib/nsbrowser/plugins ${CHROMIUM_FLAGS} "$@"

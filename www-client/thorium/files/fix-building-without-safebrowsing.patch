@@ -219,7 +219,7 @@
  }
 --- a/chrome/browser/download/chrome_download_manager_delegate.cc
 +++ b/chrome/browser/download/chrome_download_manager_delegate.cc
-@@ -163,7 +163,6 @@
+@@ -163,7 +163,6 @@ using content::DownloadManager;
  using download::DownloadItem;
  using download::DownloadPathReservationTracker;
  using download::PathValidationResult;
@@ -227,7 +227,7 @@
  using ConnectionType = net::NetworkChangeNotifier::ConnectionType;
  
  #if BUILDFLAG(FULL_SAFE_BROWSING)
-@@ -697,15 +696,6 @@
+@@ -697,15 +696,6 @@ bool ChromeDownloadManagerDelegate::Shou
  #endif
  
    bool should_open = download_prefs_->IsAutoOpenEnabled(url, path);
@@ -243,7 +243,7 @@
  
    return should_open;
  }
-@@ -1729,7 +1719,6 @@
+@@ -1729,7 +1719,6 @@ void ChromeDownloadManagerDelegate::OnDo
      DownloadItemModel model(item);
      model.DetermineAndSetShouldPreferOpeningInBrowser(
          target_info.target_path, target_info.is_filetype_handled_safely);
@@ -251,7 +251,7 @@
    }
    if (ShouldBlockFile(item, target_info.danger_type)) {
      MaybeReportDangerousDownloadBlocked(
-@@ -1816,49 +1805,21 @@
+@@ -1816,49 +1805,21 @@ bool ChromeDownloadManagerDelegate::IsOp
    if (allow_insecure_downloads_) {
      return false;
    }
@@ -298,14 +298,14 @@
      case (DownloadPrefs::DownloadRestriction::ALL_FILES):
        return true;
  
-+      // DownloadRestrictions policy key values 1, 2 and 4 treated as invalid
-+      case (policy::DownloadRestriction::POTENTIALLY_DANGEROUS_FILES):
-+      case (policy::DownloadRestriction::DANGEROUS_FILES):
-+      case (policy::DownloadRestriction::MALICIOUS_FILES):
++    // DownloadRestrictions policy key values 1, 2 and 4 treated as invalid
++    case (DownloadPrefs::DownloadRestriction::POTENTIALLY_DANGEROUS_FILES):
++    case (DownloadPrefs::DownloadRestriction::DANGEROUS_FILES):
++    case (DownloadPrefs::DownloadRestriction::MALICIOUS_FILES):
      default:
        LOG(ERROR) << "Invalid download restriction value: "
                   << static_cast<int>(download_restriction);
-@@ -1968,8 +1929,7 @@
+@@ -1968,8 +1929,7 @@ void ChromeDownloadManagerDelegate::Chec
    DCHECK(download_item);
    DCHECK(download_item->IsSavePackageDownload());
  
@@ -1764,6 +1764,173 @@
    // Callback used to receive the results of a content analysis scan.
    void ContentAnalysisCompletionCallback(
        std::vector<blink::mojom::FileChooserFileInfoPtr> list,
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.cc
+@@ -37,7 +37,6 @@
+ #include "chrome/browser/permissions/permission_decision_auto_blocker_factory.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/profiles/profile_manager.h"
+-#include "chrome/browser/safe_browsing/download_protection/download_protection_util.h"
+ #include "chrome/browser/ui/browser_finder.h"
+ #include "chrome/browser/ui/file_system_access/file_system_access_dangerous_file_dialog.h"
+ #include "chrome/browser/ui/file_system_access/file_system_access_dialogs.h"
+@@ -451,89 +450,6 @@ bool ShouldBlockAccessToPath(const base:
+   return true;
+ }
+ 
+-void DoSafeBrowsingCheckOnUIThread(
+-    content::GlobalRenderFrameHostId frame_id,
+-    std::unique_ptr<content::FileSystemAccessWriteItem> item,
+-    safe_browsing::CheckDownloadCallback callback) {
+-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  // Download Protection Service is not supported on Android.
+-#if BUILDFLAG(FULL_SAFE_BROWSING)
+-  safe_browsing::SafeBrowsingService* sb_service =
+-      g_browser_process->safe_browsing_service();
+-  if (!sb_service || !sb_service->download_protection_service() ||
+-      !sb_service->download_protection_service()->enabled()) {
+-    std::move(callback).Run(safe_browsing::DownloadCheckResult::UNKNOWN);
+-    return;
+-  }
+-
+-  if (!item->browser_context) {
+-    content::RenderProcessHost* rph =
+-        content::RenderProcessHost::FromID(frame_id.child_id);
+-    if (!rph) {
+-      std::move(callback).Run(safe_browsing::DownloadCheckResult::UNKNOWN);
+-      return;
+-    }
+-    item->browser_context = rph->GetBrowserContext();
+-  }
+-
+-  if (!item->web_contents) {
+-    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(frame_id);
+-    if (rfh) {
+-      DCHECK_NE(rfh->GetLifecycleState(),
+-                content::RenderFrameHost::LifecycleState::kPrerendering);
+-      item->web_contents = content::WebContents::FromRenderFrameHost(rfh);
+-    }
+-  }
+-
+-  sb_service->download_protection_service()->CheckFileSystemAccessWrite(
+-      std::move(item), std::move(callback));
+-#else
+-  std::move(callback).Run(safe_browsing::DownloadCheckResult::UNKNOWN);
+-#endif
+-}
+-
+-ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult
+-InterpretSafeBrowsingResult(safe_browsing::DownloadCheckResult result) {
+-  using Result = safe_browsing::DownloadCheckResult;
+-  switch (result) {
+-    // Only allow downloads that are marked as SAFE or UNKNOWN by SafeBrowsing.
+-    // All other types are going to be blocked. UNKNOWN could be the result of a
+-    // failed safe browsing ping or if Safe Browsing is not enabled.
+-    case Result::UNKNOWN:
+-    case Result::SAFE:
+-    case Result::ALLOWLISTED_BY_POLICY:
+-      return ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::
+-          kAllow;
+-
+-    case Result::DANGEROUS:
+-    case Result::UNCOMMON:
+-    case Result::DANGEROUS_HOST:
+-    case Result::POTENTIALLY_UNWANTED:
+-    case Result::BLOCKED_PASSWORD_PROTECTED:
+-    case Result::BLOCKED_TOO_LARGE:
+-    case Result::DANGEROUS_ACCOUNT_COMPROMISE:
+-    case Result::BLOCKED_SCAN_FAILED:
+-      return ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::
+-          kBlock;
+-
+-    // This shouldn't be returned for File System Access write checks.
+-    case Result::ASYNC_SCANNING:
+-    case Result::ASYNC_LOCAL_PASSWORD_SCANNING:
+-    case Result::SENSITIVE_CONTENT_WARNING:
+-    case Result::SENSITIVE_CONTENT_BLOCK:
+-    case Result::DEEP_SCANNED_SAFE:
+-    case Result::PROMPT_FOR_SCANNING:
+-    case Result::PROMPT_FOR_LOCAL_PASSWORD_SCANNING:
+-    case Result::DEEP_SCANNED_FAILED:
+-    case Result::IMMEDIATE_DEEP_SCAN:
+-      NOTREACHED_IN_MIGRATION();
+-      return ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::
+-          kAllow;
+-  }
+-  NOTREACHED_IN_MIGRATION();
+-  return ChromeFileSystemAccessPermissionContext::AfterWriteCheckResult::kBlock;
+-}
+-
+ std::string GenerateLastPickedDirectoryKey(const std::string& id) {
+   return id.empty() ? kDefaultLastPickedDirectoryKey
+                     : base::StrCat({kCustomLastPickedDirectoryKey, "-", id});
+@@ -553,13 +469,7 @@ std::string_view GetGrantKeyFromGrantTyp
+ bool FileHasDangerousExtension(const url::Origin& origin,
+                                const base::FilePath& path,
+                                Profile* profile) {
+-  safe_browsing::DownloadFileType::DangerLevel danger_level =
+-      safe_browsing::FileTypePolicies::GetInstance()->GetFileDangerLevel(
+-          path, origin.GetURL(), profile->GetPrefs());
+-  // See https://crbug.com/1320877#c4 for justification for why we show the
+-  // prompt if `danger_level` is ALLOW_ON_USER_GESTURE as well as DANGEROUS.
+-  return danger_level == safe_browsing::DownloadFileType::DANGEROUS ||
+-         danger_level == safe_browsing::DownloadFileType::ALLOW_ON_USER_GESTURE;
++  return false;
+ }
+ 
+ }  // namespace
+@@ -1672,7 +1582,7 @@ void ChromeFileSystemAccessPermissionCon
+     std::vector<PathInfo> entries,
+     content::GlobalRenderFrameHostId frame_id,
+     EntriesAllowedByEnterprisePolicyCallback callback) {
+-#if BUILDFLAG(ENTERPRISE_CLOUD_CONTENT_ANALYSIS)
++#if false
+   // Get WebContents pointer in order to perform enterprise content analysis.
+   content::WebContents* web_contents = nullptr;
+   if (!entries.empty()) {
+@@ -1780,29 +1690,6 @@ void ChromeFileSystemAccessPermissionCon
+       std::move(callback));
+ }
+ 
+-void ChromeFileSystemAccessPermissionContext::PerformAfterWriteChecks(
+-    std::unique_ptr<content::FileSystemAccessWriteItem> item,
+-    content::GlobalRenderFrameHostId frame_id,
+-    base::OnceCallback<void(AfterWriteCheckResult)> callback) {
+-  DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+-  content::GetUIThreadTaskRunner({})->PostTask(
+-      FROM_HERE,
+-      base::BindOnce(
+-          &DoSafeBrowsingCheckOnUIThread, frame_id, std::move(item),
+-          base::BindOnce(
+-              [](scoped_refptr<base::TaskRunner> task_runner,
+-                 base::OnceCallback<void(AfterWriteCheckResult result)>
+-                     callback,
+-                 safe_browsing::DownloadCheckResult result) {
+-                task_runner->PostTask(
+-                    FROM_HERE,
+-                    base::BindOnce(std::move(callback),
+-                                   InterpretSafeBrowsingResult(result)));
+-              },
+-              base::SequencedTaskRunner::GetCurrentDefault(),
+-              std::move(callback))));
+-}
+-
+ void ChromeFileSystemAccessPermissionContext::DidCheckPathAgainstBlocklist(
+     const url::Origin& origin,
+     const base::FilePath& path,
+--- a/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
++++ b/chrome/browser/file_system_access/chrome_file_system_access_permission_context.h
+@@ -180,10 +180,6 @@ class ChromeFileSystemAccessPermissionCo
+       UserAction user_action,
+       content::GlobalRenderFrameHostId frame_id,
+       base::OnceCallback<void(SensitiveEntryResult)> callback) override;
+-  void PerformAfterWriteChecks(
+-      std::unique_ptr<content::FileSystemAccessWriteItem> item,
+-      content::GlobalRenderFrameHostId frame_id,
+-      base::OnceCallback<void(AfterWriteCheckResult)> callback) override;
+   bool CanObtainReadPermission(const url::Origin& origin) override;
+   bool CanObtainWritePermission(const url::Origin& origin) override;
+   void SetLastPickedDirectory(const url::Origin& origin,
 --- a/chrome/browser/media/webrtc/display_media_access_handler.cc
 +++ b/chrome/browser/media/webrtc/display_media_access_handler.cc
 @@ -29,6 +29,7 @@
@@ -2180,6 +2347,44 @@
    set_analyzing_content(/*analyzing=*/false);
  #endif
    if (!should_proceed) {
+--- a/chrome/browser/printing/print_view_manager_base.cc
++++ b/chrome/browser/printing/print_view_manager_base.cc
+@@ -441,7 +441,7 @@ void PrintViewManagerBase::StartLocalPri
+     PrinterHandler::PrintCallback callback) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if false
+   // Populating `content_analysis_before_printing_document_` if needed should be
+   // done first in this function's workflow, this way other code can check if
+   // content analysis is going to happen and delay starting `print_job_` to
+@@ -839,7 +839,7 @@ void PrintViewManagerBase::ScriptedPrint
+     return;
+   }
+ #endif
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if false
+   std::optional<enterprise_connectors::ContentAnalysisDelegate::Data>
+       scanning_data = enterprise_data_protection::GetPrintAnalysisData(
+           web_contents(), enterprise_data_protection::PrintScanningContext::
+@@ -1340,7 +1340,7 @@ void PrintViewManagerBase::CompleteScrip
+                      std::move(callback_wrapper)));
+ }
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if false
+ void PrintViewManagerBase::CompletePrintDocumentAfterContentAnalysis(
+     scoped_refptr<base::RefCountedMemory> print_data,
+     const gfx::Size& page_size,
+@@ -1363,17 +1363,6 @@ void PrintViewManagerBase::ContentAnalys
+     const gfx::Size& page_size,
+     const gfx::Rect& content_area,
+     const gfx::Point& offsets) {
+-  scanning_data.printer_name =
+-      base::UTF16ToUTF8(print_job_->document()->settings().device_name());
+-
+-  auto on_verdict = base::BindOnce(
+-      &PrintViewManagerBase::CompletePrintDocumentAfterContentAnalysis,
 -      weak_ptr_factory_.GetWeakPtr(), print_data, page_size, content_area,
 -      offsets);
 -
@@ -2189,6 +2394,17 @@
  }
  
  void PrintViewManagerBase::set_analyzing_content(bool analyzing) {
+--- a/chrome/browser/printing/print_view_manager_base.h
++++ b/chrome/browser/printing/print_view_manager_base.h
+@@ -229,7 +229,7 @@ class PrintViewManagerBase : public Prin
+                                      mojom::ScriptedPrintParamsPtr params,
+                                      ScriptedPrintCallback callback);
+ 
+-#if BUILDFLAG(ENTERPRISE_CONTENT_ANALYSIS)
++#if false
+   // Helper method bound to `content_analysis_before_printing_document_` when
+   // content analysis should happen right before the document is to be printed.
+   // This method is virtual for testing purposes.
 --- a/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
 +++ b/chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
 @@ -845,9 +845,6 @@ void ChromeBrowserMainExtraPartsProfiles

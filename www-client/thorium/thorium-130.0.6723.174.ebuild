@@ -664,6 +664,12 @@ src_prepare() {
 		)
 	fi
 
+	if ! use thorium-libjxl; then
+		PATCHES+=(
+			"${FILESDIR}/thorium-130-fix-building-without-libjxl.patch"
+		)
+	fi
+
 	default
 
 	mkdir -p third_party/node/linux/node-linux-x64/bin || die
@@ -698,6 +704,10 @@ src_prepare() {
 		sed -i 's/net::SecureDnsMode::kAutomatic/net::SecureDnsMode::kSecure/' \
 			"${UGC_WD}/patches/core/ungoogled-chromium/doh-changes.patch" || die
 		sed -i '683,714d' \
+			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
+		sed -i '848,857d' \
+			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
+		sed -i '656,674d' \
 			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
 		sed -i '4,5d' \
 			"${UGC_WD}/patches/extra/ungoogled-chromium/add-ungoogled-flag-headers.patch" || die
@@ -745,7 +755,7 @@ src_prepare() {
 			-e '23,25c \   const std::string new_value =\
        internal_name == "custom-ntp"\
            ? value' \
-			-e 's/internal_name == "http-accept-header"/: internal_name == "http-accept-header"/' \
+			-e 's/internal_name == "http-accept-header" ? value :/: internal_name == "http-accept-header" ? value/' \
 			-e 's/CombineAndSanitizeOriginLists(std::string(), value);/: CombineAndSanitizeOriginLists(std::string(), value);/' \
 			-e '30,49d' \
 			"${UGC_WD}/patches/extra/ungoogled-chromium/add-flag-to-change-http-accept-header.patch" || die
@@ -1768,7 +1778,7 @@ src_install() {
 
 	use enable-driver && dosym "${CHROMIUM_HOME}/chromedriver" /usr/bin/chromedriver
 	if use thorium-shell; then
-		sed -i "s|/opt/chromium.org/thorium/thorium_shell|${CHROMIUM_HOME}/thorium_shell" \
+		sed -i "s|/opt/chromium.org/thorium/thorium_shell|${CHROMIUM_HOME}/thorium_shell|" \
 			out/thorium/thorium_shell/thorium-shell || die
 		dobin out/thorium/thorium_shell/thorium-shell
 	fi
@@ -1825,11 +1835,11 @@ src_install() {
 
 	# Install desktop entry
 	sed -i -e 's|./thorium-browser|/usr/bin/thorium-browser|' \
-		-e 's/Icon=product_logo_256.png/thorium-browser/' \
+		-e 's/Icon=product_logo_256.png/Icon=thorium-browser/' \
 		"${THORIUM_WD}/infra/portable/thorium-portable.desktop" || die
 	newmenu "${THORIUM_WD}/infra/portable/thorium-portable.desktop" thorium-browser-thorium.desktop
 	if use thorium-shell; then
-		sed -i 's|Icon=/opt/chromium.org/thorium/thorium_shell.png|Icon=thorium_shell' \
+		sed -i 's|Icon=/opt/chromium.org/thorium/thorium_shell.png|Icon=thorium_shell|' \
 			out/thorium/thorium_shell/thorium-shell.desktop || die
 		domenu out/thorium/thorium_shell/thorium-shell.desktop
 	fi
