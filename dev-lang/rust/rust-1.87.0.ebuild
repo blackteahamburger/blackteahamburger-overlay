@@ -3,8 +3,8 @@
 
 EAPI=8
 
-LLVM_COMPAT=( 19 )
-PYTHON_COMPAT=( python3_{10..13} )
+LLVM_COMPAT=( 20 )
+PYTHON_COMPAT=( python3_{11..14} )
 
 RUST_MAX_VER=${PV%%_*}
 if [[ ${PV} == *9999* ]]; then
@@ -124,7 +124,6 @@ RDEPEND="${DEPEND}
 	dev-lang/rust-common
 	sys-apps/lsb-release
 	!dev-lang/rust:stable
-	!dev-lang/rust:1.86
 	!dev-lang/rust-bin:stable
 "
 
