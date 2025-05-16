@@ -75,6 +75,7 @@ SRC_URI="https://github.com/blackteahamburger/gentoo-chromium-source-tarball/rel
 	)
 	ungoogled? ( https://github.com/ungoogled-software/ungoogled-chromium/archive/${UGC_PVR}.tar.gz -> ${UGC_PF}.tar.gz )
 	thorium-libjxl? ( https://github.com/Alex313031/thorium-libjxl/archive/${T_LIBJXL_COMMIT_ID}.tar.gz -> ${T_LIBJXL_PF}.tar.gz )
+	thorium-shell? ( https://chromium-fonts.storage.googleapis.com/${TEST_FONT} -> chromium-testfonts-${TEST_FONT:0:10}.tar.gz )
 "
 
 declare -A CHROMIUM_COMMITS=(
@@ -454,8 +455,12 @@ src_unpack() {
 		# for the duration of a release.
 		# This unpacks directly into/over ${S} so we can just use `unpack`.
 		unpack chromium-${PV}-testdata-gentoo.tar.xz
+	fi
+
+	if use test || use thorium-shell; then
 		# This just contains a bunch of font files that need to be unpacked (or moved) to the correct location.
 		local testfonts_dir="${S}/third_party/test_fonts"
+		use thorium-shell && testfonts_dir+="/test_fonts"
 		local testfonts_tar="${DISTDIR}/chromium-testfonts-${TEST_FONT:0:10}.tar.gz"
 		tar xf "${testfonts_tar}" -C "${testfonts_dir}" || die "Failed to unpack testfonts"
 	fi
@@ -1091,7 +1096,11 @@ src_prepare() {
 		third_party/tflite/src/third_party/xla/xla/tsl/util
 		third_party/tflite/src/third_party/xla/xla/tsl/framework
 		third_party/ukey2
+	)
+	use ungoogled || keeplibs+=(
 		third_party/unrar
+	)
+	keeplibs+=(
 		third_party/utf
 		third_party/vulkan
 		third_party/wayland
@@ -1181,6 +1190,15 @@ src_prepare() {
 
 	if ! use system-re2; then
 		keeplibs+=( third_party/re2 )
+	fi
+
+	if use thorium-shell; then
+		keeplibs+=(
+			third_party/google_benchmark/src/src
+			third_party/perfetto/protos/third_party/pprof
+			third_party/quic_trace
+			third_party/test_fonts
+		)
 	fi
 
 	# Arch-specific
