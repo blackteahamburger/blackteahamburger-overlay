@@ -1785,7 +1785,7 @@ src_install() {
 			"s:/usr/lib/:/usr/$(get_libdir)/:g;
 			s:@@OZONE_AUTO_SESSION@@:$(ozone_auto_session):g"
 	)
-	sed "${sedargs[@]}" "${FILESDIR}/chromium-launcher-r7.sh" > thorium-launcher.sh || die
+	sed "${sedargs[@]}" "${FILESDIR}/thorium-launcher.sh" > thorium-launcher.sh || die
 	doexe thorium-launcher.sh
 
 	# It is important that we name the target "chromium-browser",
@@ -1796,14 +1796,18 @@ src_install() {
 
 	use enable-driver && dosym "${CHROMIUM_HOME}/chromedriver" /usr/bin/chromedriver
 	if use thorium-shell; then
-		sed -i "s|/opt/chromium.org/thorium/thorium_shell|${CHROMIUM_HOME}/thorium_shell|" \
-			out/thorium/thorium_shell/thorium-shell || die
-		dobin out/thorium/thorium_shell/thorium-shell
+		doexe thorium-shell-launcher.sh
+		dosym "${CHROMIUM_HOME}/thorium-shell-launcher.sh" /usr/bin/thorium-shell
 	fi
 
 	# Allow users to override command-line options, bug #357629.
 	insinto /etc/thorium
-	newins "${FILESDIR}/chromium.default" "default"
+	newins "${FILESDIR}/thorium.default" "default"
+
+	if use thorium-shell; then
+		insinto /etc/thorium-shell
+		newins "${FILESDIR}/thorium-shell.default" "default"
+	fi
 
 	pushd out/thorium/locales > /dev/null || die
 	chromium_remove_language_paks
