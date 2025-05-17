@@ -1851,7 +1851,7 @@ src_install() {
 	if use thorium-shell; then
 		for size in 16 24 32 48 64 128 256 ; do
 			newicon -s ${size} "${THORIUM_WD}/logos/NEW/thorium_shell/thorium-devtools-${size}.png" \
-				thorium_shell.png
+				thorium-shell.png
 		done
 	fi
 
@@ -1861,9 +1861,7 @@ src_install() {
 		"${THORIUM_WD}/infra/portable/thorium-portable.desktop" || die
 	newmenu "${THORIUM_WD}/infra/portable/thorium-portable.desktop" thorium-browser-thorium.desktop
 	if use thorium-shell; then
-		sed -i 's|Icon=/opt/chromium.org/thorium/thorium_shell.png|Icon=thorium_shell|' \
-			out/thorium/thorium_shell/thorium-shell.desktop || die
-		domenu out/thorium/thorium_shell/thorium-shell.desktop
+		domenu "${FILESDIR}/thorium-shell.desktop"
 	fi
 
 	# Install GNOME default application entry (bug #303100).
