@@ -8,7 +8,7 @@ for f in /etc/thorium/*; do
 done
 
 # Prefer user defined CHROMIUM_USER_FLAGS (from env) over system
-# default CHROMIUM_FLAGS (from /etc/chromium/default).
+# default CHROMIUM_FLAGS (from /etc/thorium/default).
 CHROMIUM_FLAGS=${CHROMIUM_USER_FLAGS:-"$CHROMIUM_FLAGS"}
 
 # Let the wrapped binary know that it has been run through the wrapper
