@@ -1796,7 +1796,7 @@ src_install() {
 
 	use enable-driver && dosym "${CHROMIUM_HOME}/chromedriver" /usr/bin/chromedriver
 	if use thorium-shell; then
-		doexe thorium-shell-launcher.sh
+		doexe "${FILESDIR}/thorium-shell-launcher.sh"
 		dosym "${CHROMIUM_HOME}/thorium-shell-launcher.sh" /usr/bin/thorium-shell
 	fi
 
