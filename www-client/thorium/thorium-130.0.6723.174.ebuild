@@ -779,7 +779,8 @@ src_prepare() {
 			chrome_file_system_access_permission_context.cc layer_tree_view.cc"
 
 		if use thorium-shell; then
-			UGC_KEEP_BINARIES="${UGC_KEEP_BINARIES} third_party/test_fonts/test_fonts"
+			sed -i '/third_party\/test_fonts\/test_fonts/d' \
+				"${UGC_WD}/utils/prune_binaries.py" || die
 		fi
 
 		local ugc_unneeded=(
