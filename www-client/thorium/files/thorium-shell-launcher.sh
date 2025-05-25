@@ -39,4 +39,4 @@ CHROMIUM_FLAGS="--enable-experimental-web-platform-features --debug --enable-cle
 # Set the .desktop file name
 export CHROME_DESKTOP="thorium-shell.desktop"
 
-exec -a "thorium-shell" "$PROGDIR/thorium-shell" ${CHROMIUM_FLAGS} "$@"
+exec -a "thorium-shell" "$PROGDIR/thorium_shell" ${CHROMIUM_FLAGS} "$@"

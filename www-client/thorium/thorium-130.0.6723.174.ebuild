@@ -457,10 +457,15 @@ src_unpack() {
 		unpack chromium-${PV}-testdata-gentoo.tar.xz
 	fi
 
-	if use test || use thorium-shell; then
+	if use test; then
 		# This just contains a bunch of font files that need to be unpacked (or moved) to the correct location.
 		local testfonts_dir="${S}/third_party/test_fonts"
-		use thorium-shell && testfonts_dir+="/test_fonts"
+		local testfonts_tar="${DISTDIR}/chromium-testfonts-${TEST_FONT:0:10}.tar.gz"
+		tar xf "${testfonts_tar}" -C "${testfonts_dir}" || die "Failed to unpack testfonts"
+	fi
+
+	if use thorium-shell; then
+		local testfonts_dir="${S}/third_party/test_fonts/test_fonts"
 		local testfonts_tar="${DISTDIR}/chromium-testfonts-${TEST_FONT:0:10}.tar.gz"
 		tar xf "${testfonts_tar}" -C "${testfonts_dir}" || die "Failed to unpack testfonts"
 	fi
@@ -623,9 +628,12 @@ src_prepare() {
 	fi
 
 	einfo "Reverting chromium-84fcdd0620a72aa73ea521c682fb246067f2c14d.patch"
-	PATCHES+=(
-		"${FILESDIR}/chromium-revert-84fcdd0620a72aa73ea521c682fb246067f2c14d.patch"
-	)
+	eapply "${FILESDIR}/chromium-revert-84fcdd0620a72aa73ea521c682fb246067f2c14d.patch"
+
+	einfo "Applying perfetto-acc24608c84d2d2d8d684f40a110d0a6f4eddc51.patch"
+	pushd third_party/perfetto
+	eapply "${FILESDIR}/perfetto-acc24608c84d2d2d8d684f40a110d0a6f4eddc51.patch"
+	popd
 
 	if ! use bluetooth ; then
 		PATCHES+=(
@@ -708,11 +716,7 @@ src_prepare() {
 			"${UGC_WD}/patches/core/ungoogled-chromium/remove-unused-preferences-fields.patch" || die
 		sed -i 's/net::SecureDnsMode::kAutomatic/net::SecureDnsMode::kSecure/' \
 			"${UGC_WD}/patches/core/ungoogled-chromium/doh-changes.patch" || die
-		sed -i '683,714d' \
-			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
-		sed -i '848,857d' \
-			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
-		sed -i '656,674d' \
+		sed -i '683,714d;880,889d;656,674d' \
 			"${UGC_WD}/patches/core/ungoogled-chromium/fix-building-with-prunned-binaries.patch" || die
 		sed -i '4,5d' \
 			"${UGC_WD}/patches/extra/ungoogled-chromium/add-ungoogled-flag-headers.patch" || die
@@ -773,6 +777,10 @@ src_prepare() {
 
 		UGC_SKIP_SUBSTITUTION="${UGC_SKIP_SUBSTITUTION} flag-metadata.json histograms.xml \
 			chrome_file_system_access_permission_context.cc layer_tree_view.cc"
+
+		if use thorium-shell; then
+			UGC_KEEP_BINARIES="${UGC_KEEP_BINARIES} third_party/test_fonts/test_fonts"
+		fi
 
 		local ugc_unneeded=(
 			# GN bootstrap
@@ -1194,6 +1202,7 @@ src_prepare() {
 
 	if use thorium-shell; then
 		keeplibs+=(
+			third_party/google_benchmark/src/include/benchmark
 			third_party/google_benchmark/src/src
 			third_party/perfetto/protos/third_party/pprof
 			third_party/quic_trace
