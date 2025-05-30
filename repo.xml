@@ -2,13 +2,13 @@
 <!DOCTYPE repositories SYSTEM "/dtd/repositories.dtd">
 <repositories xmlns="" version="1.0">
 	<repo quality="experimental" status="unofficial">
-	<name>my-overlay</name>
-	<description>My overlay</description>
-	<homepage>https://github.com/blackteahamburger/my-overlay/</homepage>
+	<name>blackteahamburger-overlay</name>
+	<description>Personal Gentoo overlay</description>
+	<homepage>https://github.com/blackteahamburger/blackteahamburger-overlay/</homepage>
 	<owner type="person">
 		<name>blackteahamburger</name>
 		<email>blackteahamburger@outlook.com</email>
 	</owner>
-	<source type="git">https://github.com/blackteahamburger/my-overlay.git</source>
+	<source type="git">https://github.com/blackteahamburger/blackteahamburger-overlay.git</source>
 	</repo>
 </repositories>

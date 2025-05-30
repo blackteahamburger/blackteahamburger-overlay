@@ -1,2 +1,2 @@
-# my-overlay
-Personal overlay.
+# blackteahamburger-overlay
+Personal Gentoo overlay.
