@@ -160,7 +160,7 @@ COMMON_X_DEPEND="
 "
 
 COMMON_SNAPSHOT_DEPEND="
-	system-brotli? ( >app-arch/brotli-1.1.0 )
+	system-brotli? ( >=app-arch/brotli-9999 )
 	system-crc32c? ( dev-libs/crc32c )
 	system-double-conversion? ( dev-libs/double-conversion )
 	system-woff2? ( media-libs/woff2 )
